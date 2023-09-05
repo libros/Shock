@@ -70,11 +70,11 @@ struct MockNIOHTTPRouter: MockHttpRouter {
         !routes.isEmpty
     }
     
-    func handlerForMethod(_ method: String, path: String, params: [String:String], headers: [String:String]) -> HandlerClosure? {
+    func handlerForMethod(_ method: String, path: String, params: [String:String], headers: [String:String], body: Data) -> HandlerClosure? {
         guard let httpMethod = MockHTTPMethod(rawValue: method.uppercased()) else { return nil }
         let methodRoutes = routes[httpMethod] ?? [RouteHandlerMapping]()
         for mapping in methodRoutes {
-            if mapping.route.matches(method: httpMethod, path: path, params: params, headers: headers) {
+            if mapping.route.matches(method: httpMethod, path: path, params: params, headers: headers, body: body) {
                 return mapping.handler
             }
         }
@@ -84,9 +84,7 @@ struct MockNIOHTTPRouter: MockHttpRouter {
     mutating func register(route: MockHTTPRoute, handler: HandlerClosure?) {
         guard let method = route.method else { return }
         var methodRoutes = routes[method] ?? [RouteHandlerMapping]()
-        if methodRoutes.contains(where: { $0.route == route }) {
-            methodRoutes = methodRoutes.filter({ $0.route != route })
-        }
+
         if let handler = handler {
             methodRoutes.append(RouteHandlerMapping(route: route, handler: handler))
         }

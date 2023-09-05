@@ -11,6 +11,14 @@ public enum MockHTTPRoute {
         filename: String?
     )
     
+    case customPost(
+        method: MockHTTPMethod,
+        urlPath: String,
+        matching: (Data) -> Bool,
+        code: Int,
+        filename: String?
+    )
+    
     case custom(
         method: MockHTTPMethod,
         urlPath: String,
@@ -49,6 +57,7 @@ public enum MockHTTPRoute {
     public var urlPath: String? {
         switch self {
         case .simple(_, let urlPath, _, _),
+             .customPost(_, let urlPath, _, _, _),
              .custom(_, let urlPath, _, _, _, _, _),
              .template(_, let urlPath, _, _, _),
              .redirect(let urlPath, _),
@@ -62,6 +71,7 @@ public enum MockHTTPRoute {
     public var method: MockHTTPMethod? {
         switch self {
         case .simple(let method, _, _, _),
+             .customPost(let method, _, _, _, _),
              .custom(let method, _, _, _, _, _, _),
              .template(let method, _, _, _, _),
              .timeout(let method, _, _):
@@ -77,7 +87,7 @@ public enum MockHTTPRoute {
         switch self {
         case .custom(_, _, _, let headers, _, _, _):
             return headers
-        case .simple, .template, .redirect, .collection, .timeout:
+        case .simple, .template, .redirect, .collection, .timeout, .customPost:
             return nil
         }
     }
@@ -86,7 +96,7 @@ public enum MockHTTPRoute {
         switch self {
         case .custom(_, _, let query, _, _, _, _):
             return query
-        case .simple, .template, .redirect, .collection, .timeout:
+        case .simple, .template, .redirect, .collection, .timeout, .customPost:
             return nil
         }
     }
@@ -96,6 +106,7 @@ public enum MockHTTPRoute {
     var statusCode: Int? {
         switch self {
         case .custom(_, _, _, _, _, let statusCode, _),
+             .customPost(_, _, _, let statusCode, _),
              .simple(_, _, let statusCode, _),
              .template(_, _, let statusCode, _, _):
              return statusCode
@@ -117,7 +128,8 @@ public enum MockHTTPRoute {
     
     var filename: String? {
         switch self {
-        case .custom(_, _, _, _, _, _, let filename),
+        case .customPost(_, _, _, _, let filename),
+             .custom(_, _, _, _, _, _, let filename),
              .simple(_, _, _, let filename),
              .template(_, _, _, let filename, _):
             return filename
@@ -175,6 +187,10 @@ extension MockHTTPRoute: Equatable {
            case MockHTTPRoute.collection(let rhsRoutes) = rhs {
             return lhsRoutes.elementsEqual(rhsRoutes)
         }
+        if case MockHTTPRoute.customPost(let lhsMethod, let lhsUrlPath, _, _, _) = lhs,
+           case MockHTTPRoute.customPost(let rhsMethod, let rhsUrlPath, _, _, _) = rhs {
+            return lhsMethod == rhsMethod && lhsUrlPath.pathMatches(rhsUrlPath)
+        }
         return false
     }
     
@@ -211,7 +227,7 @@ extension MockHTTPRoute: Equatable {
         return true
     }
     
-    public func matches(method: MockHTTPMethod, path: String, params: [String:String], headers: [String:String]) -> Bool {
+    public func matches(method: MockHTTPMethod, path: String, params: [String:String], headers: [String:String], body: Data) -> Bool {
         guard !method.rawValue.isEmpty else { return false }
         guard !path.isEmpty else { return false }
         switch self {
@@ -227,6 +243,11 @@ extension MockHTTPRoute: Equatable {
             return false
         case .timeout:
             return MockHTTPRoute.timeout(method: method, urlPath: path, timeoutInSeconds: 0) == self
+        case .customPost(_, _, let matching, _, _):
+            guard MockHTTPRoute.customPost(method: method, urlPath: path, matching: { _ in return true }, code: 0, filename: nil) == self else {
+                return false
+            }
+            return matching(body)
         }
     }
 }

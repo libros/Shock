@@ -13,8 +13,8 @@ class HTTPClient {
         execute(url: url, method: "GET", headers: headers, timeout: timeout, completion: completion)
     }
     
-    static func post(url: String, headers: [String: String] = [:], timeout: Int? = nil, completion: @escaping HTTPClientResult) {
-        execute(url: url, method: "POST", headers: headers, timeout: timeout, completion: completion)
+    static func post(url: String, headers: [String: String] = [:], timeout: Int? = nil, body: Data? = nil, completion: @escaping HTTPClientResult) {
+        execute(url: url, method: "POST", headers: headers, timeout: timeout, body: body, completion: completion)
     }
     
     static func put(url: String, headers: [String: String] = [:], timeout: Int? = nil, completion: @escaping HTTPClientResult) {
@@ -25,13 +25,14 @@ class HTTPClient {
         execute(url: url, method: "DELETE", headers: headers, timeout: timeout, completion: completion)
     }
     
-    private static func execute(url: String, method: String = "GET", headers: [String: String] = [:], timeout: Int? = nil, completion: @escaping HTTPClientResult) {
+    private static func execute(url: String, method: String = "GET", headers: [String: String] = [:], timeout: Int? = nil, body: Data? = nil, completion: @escaping HTTPClientResult) {
         
         var request = URLRequest(url: URL(string: url)!)
         if let timeout = timeout {
             request.timeoutInterval = TimeInterval(timeout)
         }
         request.httpMethod = method
+        request.httpBody = body
         headers.forEach { request.addValue($0.value, forHTTPHeaderField: $0.key) }
         let task = session.dataTask(with: request) { data, response, error in
             if let error = error {

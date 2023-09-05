@@ -128,6 +128,8 @@ extension MockHTTPRoute: Codable {
             try container.encode(method, forKey: .method)
             try container.encode(urlPath, forKey: .urlPath)
             try container.encode(timeoutInSeconds, forKey: .timeoutInSeconds)
+        case .customPost:
+            throw CustomCodableError.unableToEncode
         }
     }
 }
