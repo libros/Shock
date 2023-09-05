@@ -243,11 +243,9 @@ extension MockHTTPRoute: Equatable {
             return false
         case .timeout:
             return MockHTTPRoute.timeout(method: method, urlPath: path, timeoutInSeconds: 0) == self
-        case .customPost(_, _, let matching, _, _):
-            guard MockHTTPRoute.customPost(method: method, urlPath: path, matching: { _ in return true }, code: 0, filename: nil) == self else {
-                return false
-            }
-            return matching(body)
+        case .customPost:
+            return false
+//            fatalError("Custom Post should not be handled here, should be already handled")
         }
     }
 }

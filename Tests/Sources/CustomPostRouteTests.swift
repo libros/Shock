@@ -55,7 +55,87 @@ final class CustomPostRouteTests: ShockTestCase {
         }
         self.waitForExpectations(timeout: timeout, handler: nil)
     }
+    
+    func test2SimilarReorderCustomRoute() {
+        
+        let jsonEncoder = JSONEncoder()
+        let encodedParams = try! jsonEncoder.encode(PostParam(field1: "x", field2: 299))
+        
+        let route1: MockHTTPRoute = .customPost(method: .post, urlPath:"/custom", matching: { data in
+            let decoded = try! JSONDecoder().decode(PostParam.self, from: data)
+            return decoded.field1 == "x" && decoded.field2 == 299
+        }, code: 200, filename: "testCustomRoute.txt")
+        
+        let route2: MockHTTPRoute = .customPost(method: .post, urlPath:"/custom", matching: { data in
+            let decoded = try! JSONDecoder().decode(PostParam.self, from: data)
+            return decoded.field1 == "x" && decoded.field2 == 000
+        }, code: 200, filename: "testCustomRoute2.txt")
 
+        server.setup(route: route1)
+        server.setup(route: route2)
+        
+        
+        let expectation = self.expectation(description: "Expect 200 response with response body")
+        
+        HTTPClient.post(url: "\(server.hostURL)/custom", body: encodedParams) { code, body, headers, error in
+            XCTAssertEqual(code, 200)
+            XCTAssertEqual(body, "testCustomRoute test fixture\n")
+            expectation.fulfill()
+        }
+        self.waitForExpectations(timeout: timeout, handler: nil)
+    }
+
+    func testSimpleAndCustomPostTogetherRoute() {
+        
+        let jsonEncoder = JSONEncoder()
+        let encodedParams = try! jsonEncoder.encode(PostParam(field1: "x", field2: 299))
+        
+        let route1: MockHTTPRoute = .customPost(method: .post, urlPath:"/custom", matching: { data in
+            let decoded = try! JSONDecoder().decode(PostParam.self, from: data)
+            return decoded.field1 == "x" && decoded.field2 == 299
+        }, code: 200, filename: "testCustomRoute.txt")
+        
+        let route2: MockHTTPRoute = .simple(method: .post, urlPath: "/custom", code: 200, filename: "testCustomRoute2.txt")
+
+        server.setup(route: route1)
+        server.setup(route: route2)
+        
+        
+        let expectation = self.expectation(description: "Expect 200 response with response body")
+        
+        HTTPClient.post(url: "\(server.hostURL)/custom", body: encodedParams) { code, body, headers, error in
+            XCTAssertEqual(code, 200)
+            XCTAssertEqual(body, "testCustomRoute test fixture\n")
+            expectation.fulfill()
+        }
+        self.waitForExpectations(timeout: timeout, handler: nil)
+    }
+    
+    func testSimpleAndCustomPostTogetherReverseOrderRoute() {
+        
+        let jsonEncoder = JSONEncoder()
+        let encodedParams = try! jsonEncoder.encode(PostParam(field1: "x", field2: 299))
+        
+        let route1: MockHTTPRoute = .customPost(method: .post, urlPath:"/custom", matching: { data in
+            let decoded = try! JSONDecoder().decode(PostParam.self, from: data)
+            return decoded.field1 == "x" && decoded.field2 == 299
+        }, code: 200, filename: "testCustomRoute.txt")
+        
+        let route2: MockHTTPRoute = .simple(method: .post, urlPath: "/custom", code: 200, filename: "testCustomRoute2.txt")
+
+        server.setup(route: route2)
+        server.setup(route: route1)
+        
+        
+        let expectation = self.expectation(description: "Expect 200 response with response body")
+        
+        HTTPClient.post(url: "\(server.hostURL)/custom", body: encodedParams) { code, body, headers, error in
+            XCTAssertEqual(code, 200)
+            XCTAssertEqual(body, "testCustomRoute test fixture\n")
+            expectation.fulfill()
+        }
+        self.waitForExpectations(timeout: timeout, handler: nil)
+    }
     
 }
 

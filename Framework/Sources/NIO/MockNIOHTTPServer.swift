@@ -74,6 +74,20 @@ struct MockNIOHTTPRouter: MockHttpRouter {
         guard let httpMethod = MockHTTPMethod(rawValue: method.uppercased()) else { return nil }
         let methodRoutes = routes[httpMethod] ?? [RouteHandlerMapping]()
         for mapping in methodRoutes {
+            if httpMethod == .post {
+                let customPosts = methodRoutes.first { mapping in
+                    if mapping.route.urlPath == path,
+                       mapping.route.method?.rawValue == method,
+                       case let .customPost(_, _, matching, _, _) = mapping.route {
+                        return matching(body)
+                    }
+                    return false
+                }
+                if let customPosts {
+                    return customPosts.handler
+                }
+            }
+            
             if mapping.route.matches(method: httpMethod, path: path, params: params, headers: headers, body: body) {
                 return mapping.handler
             }
